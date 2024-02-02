@@ -5,7 +5,7 @@
  * Functional Description: This is an A-B-1 multilayer perceptron network that uses gradient
  * descent learning. The network has two execution modes, running and training.
  * Other configuration parameters can be modified in the setConfig method.
-*/
+ */
 
 #include <iostream>
 #include <iomanip>
@@ -15,13 +15,13 @@ using namespace std;
 
 /**
  * These enums allow for increased readibility for certain configuration parameters.
-*/
+ */
 enum populateMode { RANDOM, CUSTOM };
 enum executionMode { TRAIN, RUN };
 
 /**
  * These variables are the configuration parameters.
-*/
+ */
 int NUM_INPUTS, NUM_HIDDEN;
 double LAMBDA;
 int MAX_ITERATIONS;
@@ -33,7 +33,7 @@ executionMode EXECUTION_MODE;
 
 /**
  * These variables represent the test cases, the truth tables, and the stored results.
-*/
+ */
 const int TEST_CASES = 4;
 double** INPUTS;
 double* TRUTH;
@@ -41,7 +41,7 @@ double* results;
 
 /**
  * a, h, and F0 represent the activation layers. T0 represents the truth.
-*/
+ */
 double* a;
 double* h;
 double F0;
@@ -49,19 +49,19 @@ double T0;
 
 /**
  * W_kj and W_j0 represent the weight arrays for the kj and j0 layers, respectively.
-*/
+ */
 double** W_kj;
 double* W_j0;
 
 /**
  * Theta_j and Theta_0 represent intermediate arrays when running the network.
-*/
+ */
 double* Theta_j;
 double Theta_0;
 
 /**
  * omega_0, psi_0, dE_dWj0, and deltaW_j0 represent intermediates when training the ji weights.
-*/
+ */
 double omega_0;
 double psi_0;
 double* dE_dWj0;
@@ -69,7 +69,7 @@ double* deltaW_j0;
 
 /**
  * Omega_j, Psi_j, dE_dWkj, and deltaW_kj represent intermediates when training the kj weights.
-*/
+ */
 double* Omega_j;
 double* Psi_j;
 double** dE_dWkj;
@@ -77,13 +77,13 @@ double** deltaW_kj;
 
 /**
  * These are used to track training status.
-*/
+ */
 int iterations;
 double averageError;
 
 /**
  * f is the activation function (currently set to sigmoid).
-*/
+ */
 double f(double x)
 {
    return 1 / (1 + exp(-x));
@@ -91,7 +91,7 @@ double f(double x)
 
 /**
  * fPrime, or f'(x), is the derivative of the activation function f(x).
-*/
+ */
 double fPrime(double x)
 {
    return f(x) * (1 - f(x));
@@ -102,7 +102,7 @@ double fPrime(double x)
  * Parameters include the network configuration (how many input layers and how many hidden layers), lambda (learning
  * rate), maximum number of iterations, the error threshold, the mode for population of weights, random number
  * minimum and maximum boundaries, whether truth tables should be printed, and the execution mode of the network.
-*/
+ */
 void setConfig()
 {
    NUM_INPUTS = 2, NUM_HIDDEN = 5;
@@ -120,7 +120,7 @@ void setConfig()
 /**
  * echoConfig prints out the configuration parameters for the network.
  * This is used as a sanity check to ensure all parameters are as expected.
-*/
+ */
 void echoConfig()
 {
    cout << "\nCONFIGURATION PARAMETERS:\n";
@@ -144,12 +144,12 @@ void echoConfig()
 /**
  * allocateMemory allocates memory for the network arrays (weights, activations, deltas, omegas, psis,
  * dE/dW, truth tables, inputs, results, etc.).
-*/
+ */
 void allocateMemory()
 {
 /**
  * Allocate memory for input arrays, truth table, and results array.
-*/
+ */
    INPUTS = new double*[TEST_CASES];
    for (int test = 0; test < TEST_CASES; test++)
       INPUTS[test] = new double[NUM_INPUTS];
@@ -158,13 +158,13 @@ void allocateMemory()
 
 /**
  * Allocate memory for the activation nodes.
-*/
+ */
    a = new double[NUM_INPUTS];
    h = new double[NUM_HIDDEN];
 
 /**
  * Allocate memory for the kj layer arrays (weights, dE/dW, and delta of weights).
-*/
+ */
    W_kj = new double*[NUM_INPUTS];
    dE_dWkj = new double*[NUM_INPUTS];
    deltaW_kj = new double*[NUM_INPUTS];
@@ -177,14 +177,14 @@ void allocateMemory()
 
 /**
  * Allocate memory for the Theta, Omega, and Psi arrays.
-*/
+ */
    Theta_j = new double[NUM_HIDDEN];
    Omega_j = new double[NUM_HIDDEN];
    Psi_j = new double[NUM_HIDDEN];
 
 /**
  * Allocate memory for the j0 layer arrays (weights, dE/dW, and delta of weights).
-*/
+ */
    W_j0 = new double[NUM_HIDDEN];
    dE_dWj0 = new double[NUM_HIDDEN];
    deltaW_j0 = new double[NUM_HIDDEN];
@@ -195,7 +195,7 @@ void allocateMemory()
 /**
  * deallocateMemory performs garbage-collection by deallocating memory for the network arrays.
  * Deletes all arrays dynamically allocated in the allocateMemory function.
-*/
+ */
 void deallocateMemory()
 {
    for (int test = 0; test < TEST_CASES; test++)
@@ -230,7 +230,7 @@ void deallocateMemory()
 
 /**
  * randomize returns a random double between the range of RANDOM_MIN (inclusive) and RANDOM_MAX (exclusive).
-*/
+ */
 double randomize()
 {
    return ((double) rand() / (double) RAND_MAX) * (RANDOM_MAX - RANDOM_MIN) + RANDOM_MIN;
@@ -241,12 +241,12 @@ double randomize()
  * There are two population modes for weights.
  * If POPULATE_MODE is RANDOM, all weights are initialized using the randomize() function.
  * If POPULATE_MODE is CUSTOM, the weights are manually set in the function to anything of the user's choice.
-*/
+ */
 void populateArrays()
 {
 /**
  * Populate the truth table (inputs and truths).
-*/
+ */
    INPUTS[0][0] = 0.0, INPUTS[0][1] = 0.0;
    INPUTS[1][0] = 0.0, INPUTS[1][1] = 1.0;
    INPUTS[2][0] = 1.0, INPUTS[2][1] = 0.0;
@@ -259,7 +259,7 @@ void populateArrays()
 
 /**
  * Populate the weights (options: random and custom).
-*/
+ */
    if (POPULATE_MODE == RANDOM)
    {
       srand(time(NULL)); // seeds the random number generator
@@ -288,12 +288,12 @@ void populateArrays()
  * runNetwork runs the network by computing the hidden layers based on the input layer and the k-j weights,
  * and the output node (F0) based on the hidden layers and the j-0 weights.
  * This function assumes that the input layer a has already been set.
-*/
+ */
 void runNetwork()
 {
 /**
  * Compute the hidden layer activations (h).
-*/
+ */
    for (int j = 0; j < NUM_HIDDEN; j++)
    {
       Theta_j[j] = 0.0;
@@ -304,7 +304,7 @@ void runNetwork()
 
 /**
  * Compute the output layer activations (F0).
-*/
+ */
    Theta_0 = 0.0;
    for (int J = 0; J < NUM_HIDDEN; J++)
       Theta_0 += h[J] * W_j0[J];
@@ -318,7 +318,7 @@ void runNetwork()
  * gradient descent to update the weights on the k-j and j-0 layers. The math can be found in
  * the design document. Training stops either when the maximum iteration limit is reached or when the
  * average error goes under the error threshold.
-*/
+ */
 void trainNetwork()
 {
    iterations = 0;
@@ -337,7 +337,7 @@ void trainNetwork()
 
 /**
  * Calculate the delta for the j-0 weights.
-*/
+ */
          omega_0 = T0 - F0;
          psi_0 = omega_0 * fPrime(Theta_0);
          for (int j = 0; j < NUM_HIDDEN; j++)
@@ -348,7 +348,7 @@ void trainNetwork()
 
 /**
  * Calculate the delta for the k-j weights.
-*/
+ */
          for (int j = 0; j < NUM_HIDDEN; j++)
          {
             Omega_j[j] = psi_0 * W_j0[j];
@@ -363,7 +363,7 @@ void trainNetwork()
 
 /**
  * Update the k-j and j-0 weights.
-*/
+ */
          for (int k = 0; k < NUM_INPUTS; k++)
             for (int j = 0; j < NUM_HIDDEN; j++)
                W_kj[k][j] += deltaW_kj[k][j];
@@ -386,7 +386,7 @@ void trainNetwork()
  * Uses the EXECUTION_MODE to either train the network by calling the trainNetwork() function
  * or run the network by calling runNetwork() for each test case.
  * When running the network, average error is also calculated.
-*/
+ */
 void trainOrRun()
 {
    if (EXECUTION_MODE == TRAIN)
@@ -395,7 +395,7 @@ void trainOrRun()
 /**
  * The network is always run, even after training. This is to ensure that the results
  * array is correct so that reportResults will function correctly.
-*/
+ */
    double totalError = 0.0; // will be used to find averageError later
 
    for (int test = 0; test < TEST_CASES; test++)
@@ -421,7 +421,7 @@ void trainOrRun()
  * of iterations and average error.
  * If the network was run, prints the average error.
  * Only prints truth tables if specified in the configuration parameters.
-*/
+ */
 void reportResults()
 {
    cout << "\nRESULTS:\n";
@@ -475,7 +475,7 @@ void reportResults()
  * It then either runs or trains (again based on configuration parameters).
  * Then, results are reported (also based on configuration parameters).
  * Finally, memory management is performed as large arrays are garbage-collected and deleted.
-*/
+ */
 int main()
 {
    setConfig();
