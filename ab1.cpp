@@ -16,8 +16,17 @@ using namespace std;
 /**
  * These enums allow for increased readibility for certain configuration parameters.
  */
-enum PopulationMode { RANDOM, CUSTOM };
-enum ExecutionMode { TRAIN, RUN };
+enum PopulationMode
+{
+   RANDOM,  // denotes random weight population
+   CUSTOM   // denotes custom weight population
+};
+
+enum ExecutionMode
+{
+   TRAIN,   // trains the network
+   RUN      // runs the network
+};
 
 /**
  * These variables are the configuration parameters.
@@ -88,7 +97,7 @@ double averageError;    // the average error of each iteration
  */
 double f(double x)
 {
-   return 1 / (1 + exp(-x));
+   return 1.0 / (1.0 + exp(-x));
 }
 
 /**
@@ -96,7 +105,8 @@ double f(double x)
  */
 double fPrime(double x)
 {
-   return f(x) * (1 - f(x));
+   double fOfX = f(x);
+   return fOfX * (1.0 - fOfX);
 }
 
 /**
@@ -108,7 +118,7 @@ double fPrime(double x)
 void setConfig()
 {
    numInputs = 2;             // the number of input layers
-   numHidden = 5;             // the number of hidden layers
+   numHidden = 1;             // the number of hidden layers
    lambda = 0.3;              // learning rate
    maxIterations = 100000;    // maximum iteration limit
    errorThreshold = 0.0002;   // average error threshold
@@ -116,7 +126,7 @@ void setConfig()
    randomMin = -1.5;          // random number generation minimum bound
    randomMax = 1.5;           // random number generation maximum bound
    printTruthTables = true;   // print truth tables
-   executionMode = TRAIN;     // execution mode (either TRAIN or RUN)
+   executionMode = RUN;     // execution mode (either TRAIN or RUN)
 
    return;
 } // void setConfig()
@@ -134,13 +144,14 @@ void echoConfig()
    cout << "Weight Population Mode: " << (populateMode == RANDOM ? "random" : "custom") << endl;
    cout << "Print Truth Tables: " << (printTruthTables ? "enabled" : "disabled") << endl;
 
+   if (populateMode == RANDOM) // only print the random number bounds if populateMode is RANDOM
+         cout << "Random Number Bounds: [" << randomMin << ", " << randomMax << "]\n";
+
    if (executionMode == TRAIN) // only print training-related parameters if training mode is selected
    {
       cout << "Lambda: " << lambda << endl;
       cout << "Maximum Iterations: " << maxIterations << endl;
       cout << "Average Error Threshold: " << errorThreshold << endl;
-      if (populateMode == RANDOM) // only print the random number bounds if populateMode is RANDOM
-         cout << "Random Number Bounds: [" << randomMin << ", " << randomMax << "]\n";
    }
 
    return;
@@ -158,7 +169,9 @@ void allocateMemory()
    inputs = new double*[TEST_CASES];
    for (int test = 0; test < TEST_CASES; test++)
       inputs[test] = new double[numInputs];
+   
    truth = new double[TEST_CASES];
+
    results = new double[TEST_CASES];
 
 /**
@@ -168,31 +181,40 @@ void allocateMemory()
    h = new double[numHidden];
 
 /**
- * Allocate memory for the kj layer arrays (weights, dE/dW, and delta of weights).
- */
-   W_kj = new double*[numInputs];
-   dE_dWkj = new double*[numInputs];
-   deltaW_kj = new double*[numInputs];
-   for (int k = 0; k < numInputs; k++)
-   {
-      W_kj[k] = new double[numHidden];
-      dE_dWkj[k] = new double[numHidden];
-      deltaW_kj[k] = new double[numHidden];
-   }
-
-/**
- * Allocate memory for the j0 layer arrays (weights, dE/dW, and delta of weights).
+ * Allocate memory for the weights for both the k-j and j-0 layer.
  */
    W_j0 = new double[numHidden];
-   dE_dWj0 = new double[numHidden];
-   deltaW_j0 = new double[numHidden];
+
+   W_kj = new double*[numInputs];
+   for (int k = 0; k < numInputs; k++)
+      W_kj[k] = new double[numHidden];
+
+   if (executionMode == TRAIN)
+   {
+/**
+ * Allocate memory for the dE/dW and the delta of weights for both the k-j and j-0 layer.
+*/
+      dE_dWj0 = new double[numHidden];
+
+      deltaW_j0 = new double[numHidden];
+
+      dE_dWkj = new double*[numInputs];
+      for (int k = 0; k < numInputs; k++)
+         dE_dWkj[k] = new double[numHidden];
+
+      deltaW_kj = new double*[numInputs];
+      for (int k = 0; k < numInputs; k++)
+         deltaW_kj[k] = new double[numHidden];
 
 /**
  * Allocate memory for the Theta, Omega, and Psi arrays.
  */
-   Theta_j = new double[numHidden];
-   Omega_j = new double[numHidden];
-   Psi_j = new double[numHidden];
+      Theta_j = new double[numHidden];
+
+      Omega_j = new double[numHidden];
+
+      Psi_j = new double[numHidden];
+   } // if (executionMode == TRAIN)
 
    return;
 } // void allocateMemory()
@@ -204,12 +226,15 @@ void allocateMemory()
 void deallocateMemory()
 {
 /**
- * Deallocate memory for input arrays, truth table, and results array.
+ * Allocate memory for input arrays, truth table, and results array.
  */
    for (int test = 0; test < TEST_CASES; test++)
       delete[] inputs[test];
+   
    delete[] inputs;
+
    delete[] truth;
+
    delete[] results;
 
 /**
@@ -219,31 +244,43 @@ void deallocateMemory()
    delete[] h;
 
 /**
- * Deallocate memory for the kj layer arrays (weights, dE/dW, and delta of weights).
+ * Deallocate memory for the weights for both the k-j and j-0 layer.
  */
    for (int k = 0; k < numInputs; k++)
-   {
       delete[] W_kj[k];
-      delete[] dE_dWkj[k];
-      delete[] deltaW_kj[k];
-   }
+
    delete[] W_kj;
-   delete[] dE_dWkj;
-   delete[] deltaW_kj;
 
-/**
- * Deallocate memory for the j0 layer arrays (weights, dE/dW, and delta of weights).
- */
    delete[] W_j0;
-   delete[] dE_dWj0;
-   delete[] deltaW_j0;
 
+   if (executionMode == TRAIN)
+   {
+/**
+ * Deallocate memory for the dE/dW and the delta of weights for both the k-j and j-0 layer.
+*/
+      for (int k = 0; k < numInputs; k++)
+         delete[] dE_dWkj[k];
+      
+      delete[] dE_dWkj;
+      
+      for (int k = 0; k < numInputs; k++)
+         delete[] deltaW_kj[k];
+      
+      delete[] deltaW_kj;
+
+      delete[] dE_dWj0;
+
+      delete[] deltaW_j0;
+      
 /**
  * Deallocate memory for the Theta, Omega, and Psi arrays.
  */
-   delete[] Theta_j;
-   delete[] Omega_j;
-   delete[] Psi_j;
+      delete[] Theta_j;
+
+      delete[] Omega_j;
+
+      delete[] Psi_j;
+   } // if (executionMode == TRAIN)
 
    return;
 } // void deallocateMemory()
@@ -269,10 +306,13 @@ void populateArrays()
  */
    inputs[0][0] = 0.0;
    inputs[0][1] = 0.0;
+
    inputs[1][0] = 0.0;
    inputs[1][1] = 1.0;
+
    inputs[2][0] = 1.0;
    inputs[2][1] = 0.0;
+
    inputs[3][0] = 1.0;
    inputs[3][1] = 1.0;
 
@@ -287,6 +327,7 @@ void populateArrays()
    if (populateMode == RANDOM)
    {
       srand(time(NULL)); // seeds the random number generator
+      rand();            // needed to return random numbers correctly
 
       for (int k = 0; k < numInputs; k++)
          for (int j = 0; j < numHidden; j++)
@@ -299,19 +340,57 @@ void populateArrays()
    {
       W_kj[0][0] = 0.4;
       W_kj[0][1] = 0.3;
+
       W_kj[1][0] = 0.3;
       W_kj[1][1] = 0.4;
+
       W_j0[0] = 0.5;
       W_j0[1] = 0.5;
    } // if (populateMode == RANDOM) ... else
 
    return;
-}
+} // void populateArrays()
+
+/**
+ * runNetworkForTraining runs the network by computing the hidden layers based on the input layer and the k-j weights,
+ * and the output node (F0) based on the hidden layers and the j-0 weights.
+ * This version of runNetwork is only used during training, as it stores Theta_j values in
+ * a global array that is only allocated during training.
+ * This function assumes that the input layer a has already been set.
+ */
+void runNetworkForTraining()
+{
+/**
+ * Compute the hidden layer activations (h).
+ */
+   for (int j = 0; j < numHidden; j++)
+   {
+      Theta_j[j] = 0.0;
+
+      for (int K = 0; K < numInputs; K++)
+         Theta_j[j] += a[K] * W_kj[K][j];
+      
+      h[j] = f(Theta_j[j]);
+   } // for (int j = 0; j < numHidden; j++)
+
+/**
+ * Compute the output layer activations (F0).
+ */
+   Theta_0 = 0.0;
+
+   for (int J = 0; J < numHidden; J++)
+      Theta_0 += h[J] * W_j0[J];
+   
+   F0 = f(Theta_0);
+
+   return;
+} // void runNetworkForTraining()
 
 /**
  * runNetwork runs the network by computing the hidden layers based on the input layer and the k-j weights,
  * and the output node (F0) based on the hidden layers and the j-0 weights.
- * This function assumes that the input layer a has already been set.
+ * This version of runNetwork is only used when running (not training), as it creates temporary Theta
+ * variables to use as accumulators. This function assumes that the input layer a has already been set.
  */
 void runNetwork()
 {
@@ -320,22 +399,27 @@ void runNetwork()
  */
    for (int j = 0; j < numHidden; j++)
    {
-      Theta_j[j] = 0.0;
+      double Theta_j = 0.0;
+
       for (int K = 0; K < numInputs; K++)
-         Theta_j[j] += a[K] * W_kj[K][j];
-      h[j] = f(Theta_j[j]);
+         Theta_j += a[K] * W_kj[K][j];
+      
+      h[j] = f(Theta_j);
    } // for (int j = 0; j < numHidden; j++)
 
 /**
  * Compute the output layer activations (F0).
  */
    Theta_0 = 0.0;
+
    for (int J = 0; J < numHidden; J++)
       Theta_0 += h[J] * W_j0[J];
+   
    F0 = f(Theta_0);
 
    return;
 } // void runNetwork()
+
 
 /**
  * calculateDeltaWeights computes the delta weights for each layer (the k-j layer and the j-0 layer).
@@ -349,6 +433,7 @@ void calculateDeltaWeights()
  */
    omega_0 = T0 - F0;
    psi_0 = omega_0 * fPrime(Theta_0);
+   
    for (int j = 0; j < numHidden; j++)
    {
       dE_dWj0[j] = -h[j] * psi_0;
@@ -397,7 +482,7 @@ void applyDeltaWeights()
 } // void applyDeltaWeights()
 
 /**
- * trainNetwork trains the network. For each iteration, the network loops over each test case and uses
+ * For each iteration, the network loops over each test case and uses
  * gradient descent to update the weights on the k-j and j-0 layers. The math can be found in
  * Design Document 1 (Minimization of the Error Function for a Single Output and One Hidden Layer).
  * Training stops either when the maximum iteration limit is reached or when the average error
@@ -418,8 +503,8 @@ void trainNetwork()
          a[1] = inputs[test][1];
          T0 = truth[test];
 
-         runNetwork();
-         totalError += 0.5 * (T0-F0) * (T0-F0);
+         runNetworkForTraining();
+         totalError += 0.5 * (T0 - F0) * (T0 - F0);
 
          calculateDeltaWeights();
 
@@ -464,7 +549,7 @@ void trainOrRun()
    averageError = totalError / (double) TEST_CASES;
 
    return;
-}
+} // void trainOrRun()
 
 /**
  * Prints results from the network's execution.
@@ -518,7 +603,7 @@ void reportResults()
    } // if (printTruthTables)
 
    return;
-}
+} // void reportResults()
 
 /**
  * The main function sets and echoes the configuration parameters.
