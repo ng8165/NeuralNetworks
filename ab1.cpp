@@ -1,7 +1,7 @@
 /**
  * A-B-1 Network
  * Author: Nelson Gou
- * Creation Date: 1/30/23
+ * Creation Date: 1/30/24
  * Functional Description: This is an A-B-1 multilayer perceptron network that uses gradient
  * descent learning. The network has two execution modes, running and training.
  * Other configuration parameters can be modified in the setConfig method.
@@ -118,7 +118,7 @@ double fPrime(double x)
 void setConfig()
 {
    numInputs = 2;             // the number of input layers
-   numHidden = 1;             // the number of hidden layers
+   numHidden = 5;             // the number of hidden layers
    lambda = 0.3;              // learning rate
    maxIterations = 100000;    // maximum iteration limit
    errorThreshold = 0.0002;   // average error threshold
@@ -126,7 +126,7 @@ void setConfig()
    randomMin = -1.5;          // random number generation minimum bound
    randomMax = 1.5;           // random number generation maximum bound
    printTruthTables = true;   // print truth tables
-   executionMode = RUN;     // execution mode (either TRAIN or RUN)
+   executionMode = TRAIN;     // execution mode (either TRAIN or RUN)
 
    return;
 } // void setConfig()
