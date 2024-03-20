@@ -814,7 +814,7 @@ void reportResults()
             printf("%.1f\t| ", inputs[test][k]);   // prints a[k] with 1 decimal place
          
          for (int i = 0; i < numOutputs; i++)
-            printf("%.17f\t| ", results[test][i]);  // prints F[i] with 8 decimal places
+            printf("%.17f\t| ", results[test][i]); // prints F[i] with 8 decimal places
          
          for (int i = 0; i < numOutputs; i++)
             printf("%.1f\t| ", truth[test][i]);    // prints T[i] with 1 decimal place
