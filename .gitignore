@@ -1,4 +1,5 @@
 .vscode/
+.venv/
 *.dSYM/
 .DS_Store
 
@@ -6,3 +7,6 @@
 *.bin
 testCases.txt
 truthTable.txt
+
+image_src/
+image_processed/
