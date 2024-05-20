@@ -5,8 +5,7 @@
 
 *.toml
 *.bin
-testCases.txt
-truthTable.txt
+*.txt
 
 image_src/
 image_processed/
